@@ -1,0 +1,1 @@
+# sample-net-azure-cloud-worker-role
