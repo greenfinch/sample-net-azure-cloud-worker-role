@@ -9,12 +9,22 @@ namespace Orchestrator.Infrastructure
         {
             var builder = new ContainerBuilder();
 
-            builder.RegisterType<FastWorker>()
-                .Named<IWorker>("Fast");
+            builder.RegisterType<FastWorker>().Keyed<IWorker>(WorkerTypes.Fast);
+            builder.RegisterType<SlowWorker>().Keyed<IWorker>(WorkerTypes.Slow);
 
-            builder.RegisterType<SlowWorker>()
-                .Named<IWorker>("Slow");
-            
+
+            builder.RegisterType<WorkerEntryPoint>()
+                .Keyed<IWorkerEntryPoint>(WorkerTypes.Fast)
+                .WithParameter("iterationDelay",3000)
+                .WithParameter((p, c) => p.ParameterType == typeof(IWorker),
+                               (p, c) => c.ResolveKeyed<IWorker>(WorkerTypes.Fast));
+
+            builder.RegisterType<WorkerEntryPoint>()
+                .Keyed<IWorkerEntryPoint>(WorkerTypes.Slow)
+                .WithParameter("iterationDelay", 10000)
+                .WithParameter((p, c) => p.ParameterType == typeof(IWorker),
+                                (p, c) => c.ResolveKeyed<IWorker>(WorkerTypes.Slow));
+
             return builder.Build();
         }
     }

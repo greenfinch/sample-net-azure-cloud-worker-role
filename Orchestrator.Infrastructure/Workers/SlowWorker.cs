@@ -5,38 +5,24 @@ using System.Threading.Tasks;
 
 namespace Orchestrator.Infrastructure.Workers
 {
-    public class SlowWorker : WorkerEntryPoint
+    public class SlowWorker : Worker
     {
-        public SlowWorker(string name) : base(name) { }
-
-        public override async Task RunAsync(CancellationToken cancelationToken)
+        public override bool DoWork(CancellationToken cancelationToken)
         {
-            Trace.TraceInformation($"   Nested Worker {Name}: running");
+            var random = new Random();
+            var next = random.Next(1, 21);
 
-            while (!cancelationToken.IsCancellationRequested)
+            if (next % 20 != 0)
             {
-                try
-                {
-                    var random = new Random();
-                    var next = random.Next(1, 21);
-
-                    if (next % 20 != 0)
-                    {
-                        Trace.TraceInformation($"   Nested Worker {Name}: Did Work");
-                    }
-                    else
-                    {
-                        int x = 0, y = 1;
-                        int z = y / x;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Trace.TraceError($"   Nested Worker {Name}: Error: {ex}");
-                }
-
-                await Task.Delay(5000); //7 seconds cos I'm fast
+                Trace.TraceInformation($"      Nested Worker {Id}: Did Work");
             }
+            else
+            {
+                int x = 0, y = 1;
+                int z = y / x;
+            }
+
+            return true;
         }
     }
 }

@@ -15,33 +15,26 @@ namespace Orchestrator
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private readonly ManualResetEvent runCompleteEvent = new ManualResetEvent(false);
         private readonly List<Task> Tasks = new List<Task>();
-        private readonly List<IWorker> Workers = new List<IWorker>();
+        private readonly List<IWorkerEntryPoint> Workers = new List<IWorkerEntryPoint>();
 
-        private IContainer _ioc;
+        private IContainer container;
 
         private void DoSetup()
         {
-            _ioc = AutoFacBootstrapper.Setup();
+            container = AutoFacBootstrapper.Setup();
 
-            using (var lts = _ioc.BeginLifetimeScope())
+            for (int i = 1; i <= 4; i++)
             {
-                Enumerable
-                    .Range(1, 4)
-                    .ToList()
-                    .ForEach(
-                        i =>
-                        {
-                            Workers.Add(
-                                _ioc.ResolveNamed<IWorker>("Fast", new NamedParameter("name", $"FAST-{i}"))
-                                );
-
-                            Workers.Add(
-                                _ioc.ResolveNamed<IWorker>("Slow", new NamedParameter("name", $"SLOW-{i}"))
-                                );
-                        });
+                Workers.Add(
+                    container.ResolveKeyed<IWorkerEntryPoint>(WorkerTypes.Fast,
+                    new NamedParameter("id", i.ToString()))
+                );
+                Workers.Add(
+                    container.ResolveKeyed<IWorkerEntryPoint>(WorkerTypes.Slow,
+                    new NamedParameter("id", i.ToString()))
+                );
             }
         }
-
 
         public override void Run()
         {
@@ -61,6 +54,7 @@ namespace Orchestrator
             Trace.TraceInformation("Orchestrator: is starting");
             ServicePointManager.DefaultConnectionLimit = 12;
             DoSetup();
+            Parallel.ForEach(Workers, (w) => w.OnStart());
             bool result = base.OnStart();
             Trace.TraceInformation("Orchestrator: has been started");
             return result;
